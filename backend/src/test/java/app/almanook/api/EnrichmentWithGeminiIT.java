@@ -89,7 +89,7 @@ class EnrichmentWithGeminiIT extends AbstractIntegrationTest {
         assertThat(draft.at("/card/priceSource").asString()).isEqualTo("SOURCE");
         assertThat(draft.at("/card/openingHoursNote").isNull()).isTrue();
         assertThat(draft.at("/enrichment/provider").asString()).isEqualTo("gemini");
-        assertThat(draft.at("/enrichment/model").asString()).isEqualTo("gemini-3.8-flash");
+        assertThat(draft.at("/enrichment/model").asString()).isEqualTo("gemini-3.5-flash-lite");
     }
 
     @Test

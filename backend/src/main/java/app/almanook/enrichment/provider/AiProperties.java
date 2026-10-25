@@ -31,10 +31,11 @@ public record AiProperties(
             @DefaultValue("https://generativelanguage.googleapis.com")
             String baseUrl,
 
-            @DefaultValue("gemini-3.8-flash") String model,
+            @DefaultValue("gemini-3.5-flash-lite") String model,
             /* minimal | low | medium | high */
             @DefaultValue("low") String thinkingLevel,
-            @DefaultValue("120s") Duration timeout) {
+            /* Research and extraction must both fit within the web proxy's 180 s limit. */
+            @DefaultValue("75s") Duration timeout) {
 
         public boolean configured() {
             return apiKey != null && !apiKey.isBlank();

@@ -5,6 +5,7 @@ import static com.github.tomakehurst.wiremock.client.WireMock.containing;
 import static com.github.tomakehurst.wiremock.client.WireMock.equalTo;
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
 import static com.github.tomakehurst.wiremock.client.WireMock.matchingJsonPath;
+import static com.github.tomakehurst.wiremock.client.WireMock.notContaining;
 import static com.github.tomakehurst.wiremock.client.WireMock.post;
 import static com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
@@ -200,18 +201,46 @@ class GeminiResearchProviderTest {
                 .hasMessageContaining("API key");
 
         api.resetAll();
-        stubInteractions(429, "{\"error\":{\"code\":429,\"status\":\"RESOURCE_EXHAUSTED\"}}");
-        assertThatThrownBy(() -> provider.research(request))
+        stubInteractions(
+                429, "{\"error\":{\"code\":\"too_many_requests\",\"message\":\"You exceeded your current quota\"}}");
+        assertThatThrownBy(() -> provider.extract(request, ResearchNotes.none()))
                 .isInstanceOf(AiProviderException.class)
-                .hasMessageContaining("rate limited");
-        api.verify(
-                3, postRequestedFor(urlEqualTo(INTERACTIONS)).withHeader("x-goog-api-key", equalTo("gemini-test-key")));
+                .hasMessageContaining("usage limit");
+        // Quota errors are not retried.
+        api.verify(1, postRequestedFor(urlEqualTo(INTERACTIONS)));
 
         api.resetAll();
         stubInteractions(503, "{\"error\":{\"code\":503,\"status\":\"UNAVAILABLE\"}}");
         assertThatThrownBy(() -> provider.research(request))
                 .isInstanceOf(AiProviderException.class)
                 .hasMessageContaining("temporarily unavailable");
+    }
+
+    @Test
+    void withoutSearchQuotaResearchContinuesWithUrlContextOnly() {
+        api.stubFor(post(urlEqualTo(INTERACTIONS))
+                .withRequestBody(containing("google_search"))
+                .willReturn(aResponse()
+                        .withStatus(429)
+                        .withHeader("Content-Type", "application/json")
+                        .withBody("{\"error\":{\"code\":\"too_many_requests\","
+                                + "\"message\":\"You exceeded your current quota, please check your plan\"}}")));
+        api.stubFor(post(urlEqualTo(INTERACTIONS))
+                .withRequestBody(notContaining("google_search"))
+                .willReturn(aResponse()
+                        .withHeader("Content-Type", "application/json")
+                        .withBody(fixture("research.json"))));
+
+        assertThat(provider.research(request).notes()).contains("15 PLN");
+        api.verify(postRequestedFor(urlEqualTo(INTERACTIONS))
+                .withRequestBody(matchingJsonPath("$.tools[0].type", equalTo("url_context")))
+                .withRequestBody(matchingJsonPath("$.system_instruction", containing("Web search is not available"))));
+
+        // Once the key is known to lack search quota, later requests skip search straight away.
+        api.resetRequests();
+        provider.research(request);
+        api.verify(1, postRequestedFor(urlEqualTo(INTERACTIONS)));
+        api.verify(0, postRequestedFor(urlEqualTo(INTERACTIONS)).withRequestBody(containing("google_search")));
     }
 
     @Test

@@ -25,10 +25,17 @@ in current web data and JSON-schema-constrained output.
 * Send `store: false` so Google does not retain interactions.
 * Choose the provider with `ALMANOOK_AI_PROVIDER`: `auto` (Anthropic if its key is set, otherwise
   Gemini), `anthropic`, `gemini` or `none`. An explicit choice never falls back silently to the other
-  provider. Default model: `gemini-3.8-flash`, which Google recommends for new projects.
+  provider. Default model: `gemini-3.5-flash-lite`, one of the two models Google recommends for new
+  projects. In testing with a free-tier key, `gemini-3.8-flash` (the other one) did not answer within
+  200 seconds, while Flash-Lite answered research requests in about 12 seconds.
+* Google Search grounding is not available on the free tier (Gemini API pricing, October 2026); URL
+  context is. When Gemini answers a search request with 429, the adapter repeats the research with
+  URL context only, tells the model that search is unavailable, and skips search for the rest of the
+  process. 429 responses are not retried because Gemini also uses them for exhausted quotas. Timeouts
+  are not retried either, so research and extraction (75 s each) stay inside the proxy's 180 s limit.
 * Failure semantics are the same as for Claude. HTTP errors, a `failed` or `incomplete` status, empty
   output (for example a safety block) and invalid JSON all become `AiProviderException`; nothing is
-  invented. Rate-limit and 5xx responses are retried twice with a short backoff.
+  invented. 5xx responses and connection failures are retried twice with a short backoff.
 
 ## Consequences
 
@@ -38,5 +45,8 @@ in current web data and JSON-schema-constrained output.
   from Google's redirect host; links that do not resolve are dropped as evidence (see
   [security.md](../security.md)).
 * Google does not document every field of the tool-result steps, so the parser reads them
-  defensively. The adapter is contract-tested against WireMock but has not yet been run against the
-  live API.
+  defensively. The `url_context_result` and `url_citation` shapes the parser relies on were checked
+  against live responses on 2026-10-25.
+* Without search (free tier), the model has to guess official URLs, and Google's fetcher cannot load
+  some sites. Facts from pages that did not load are dropped, so free-tier drafts are often thinner:
+  a title, type and description with no verified dates or prices.

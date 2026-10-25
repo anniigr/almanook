@@ -16,6 +16,7 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.net.http.HttpTimeoutException;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -26,6 +27,7 @@ import java.util.Optional;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.slf4j.Logger;
@@ -57,6 +59,19 @@ public class GeminiResearchProvider implements AiResearchProvider {
     private final HttpClient http;
     private final String redirectHost;
     private final Duration retryDelay;
+    /** Turned off for the rest of the process once the key turns out to have no search quota. */
+    private final AtomicBoolean searchAvailable = new AtomicBoolean(true);
+
+    /** Gemini answered 429: a per-minute rate limit, or a quota the key's tier does not include. */
+    static final class QuotaExceeded extends AiProviderException {
+        final String detail;
+
+        QuotaExceeded(String detail) {
+            super("The AI provider's usage limit for this API key was reached. Try again later,"
+                    + " or check the key's plan and billing in Google AI Studio.");
+            this.detail = detail;
+        }
+    }
 
     public GeminiResearchProvider(AiProperties.Gemini properties, JsonMapper json, Validator validator) {
         this(properties, json, validator, GROUNDING_REDIRECT_HOST, Duration.ofSeconds(1));
@@ -96,10 +111,22 @@ public class GeminiResearchProvider implements AiResearchProvider {
 
     @Override
     public ResearchNotes research(ResearchRequest request) {
-        Map<String, Object> body = base(Prompts.researchSystem(request), Prompts.researchUser(request), 8_000);
-        body.put("tools", List.of(Map.of("type", "google_search"), Map.of("type", "url_context")));
-
-        JsonNode interaction = call(body);
+        JsonNode interaction;
+        if (searchAvailable.get()) {
+            try {
+                interaction = call(researchBody(request, true));
+            } catch (QuotaExceeded e) {
+                // Free-tier keys have no Google Search grounding quota; URL context is still free.
+                searchAvailable.set(false);
+                log.warn(
+                        "Gemini refused Google Search grounding ({}). Continuing with URL context only;"
+                                + " enable billing on the key to restore search.",
+                        e.detail);
+                interaction = call(researchBody(request, false));
+            }
+        } else {
+            interaction = call(researchBody(request, false));
+        }
         String status = interaction.path("status").asString("");
         if (!"completed".equals(status) && !"incomplete".equals(status)) {
             throw failed(interaction);
@@ -116,6 +143,22 @@ public class GeminiResearchProvider implements AiResearchProvider {
             official = m.group(1);
         }
         return new ResearchNotes(text, resolveRedirects(retrieved), official);
+    }
+
+    private Map<String, Object> researchBody(ResearchRequest request, boolean withSearch) {
+        String system = Prompts.researchSystem(request);
+        if (!withSearch) {
+            system += "\n\nWeb search is not available in this session. Open pages directly by URL instead:"
+                    + " the URL the user supplied, the official website of the venue or organiser, and its"
+                    + " ticket, programme or opening-hours pages. Only facts read from a page that loaded count.";
+        }
+        Map<String, Object> body = base(system, Prompts.researchUser(request), 8_000);
+        body.put(
+                "tools",
+                withSearch
+                        ? List.of(Map.of("type", "google_search"), Map.of("type", "url_context"))
+                        : List.of(Map.of("type", "url_context")));
+        return body;
     }
 
     @Override
@@ -170,6 +213,11 @@ public class GeminiResearchProvider implements AiResearchProvider {
             HttpResponse<String> response;
             try {
                 response = http.send(request, HttpResponse.BodyHandlers.ofString());
+            } catch (HttpTimeoutException e) {
+                // A slow model will not get faster on retry; fail within the request budget instead.
+                log.warn("Gemini did not answer within {}", properties.timeout());
+                throw new AiProviderException("The AI provider took too long to answer. Try again later,"
+                        + " or choose a faster model (ALMANOOK_GEMINI_MODEL).");
             } catch (IOException e) {
                 if (attempt < MAX_ATTEMPTS) {
                     pause(attempt);
@@ -190,7 +238,8 @@ public class GeminiResearchProvider implements AiResearchProvider {
                     throw new AiProviderException("The AI provider returned an unexpected response.");
                 }
             }
-            if ((code == 429 || code >= 500) && attempt < MAX_ATTEMPTS) {
+            // 429 is not retried: Gemini uses it for exhausted quotas, where retrying only burns requests.
+            if (code >= 500 && attempt < MAX_ATTEMPTS) {
                 pause(attempt);
                 continue;
             }
@@ -210,7 +259,8 @@ public class GeminiResearchProvider implements AiResearchProvider {
             return new AiProviderException("The AI provider rejected the configured API key.");
         }
         if (code == 429) {
-            return new AiProviderException("The AI provider is busy (rate limited). Try again in a minute.");
+            log.warn("Gemini quota or rate limit (429): {}", message);
+            return new QuotaExceeded(message);
         }
         log.warn("Gemini API error {}: {}", code, message);
         return new AiProviderException(

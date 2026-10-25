@@ -241,7 +241,7 @@ Everything is configured through environment variables, documented in
 | `ALMANOOK_AI_PROVIDER` | `auto` (default: Anthropic if its key is set, otherwise Gemini), `anthropic`, `gemini` or `none` |
 | `ALMANOOK_AI_MODEL` / `ALMANOOK_AI_EFFORT` | Claude: default `claude-opus-5-5` at `low` effort. Can be switched to, for example, `claude-sonnet-5-5` or `claude-haiku-5-5` to reduce cost. |
 | `ALMANOOK_AI_REFUSAL_FALLBACK` | Sends Claude's server-side refusal fallback (beta). Set `false` if your account or gateway rejects it. |
-| `ALMANOOK_GEMINI_MODEL` / `ALMANOOK_GEMINI_THINKING_LEVEL` | Gemini: default `gemini-3.8-flash` at thinking level `low`. A key is free to create at [Google AI Studio](https://aistudio.google.com/apikey). |
+| `ALMANOOK_GEMINI_MODEL` / `ALMANOOK_GEMINI_THINKING_LEVEL` | Gemini: default `gemini-3.5-flash-lite` at thinking level `low`. A key is free to create at [Google AI Studio](https://aistudio.google.com/apikey). Google Search grounding needs a paid-tier key; on the free tier the app researches with URL context only and says so in the logs. |
 | `UNSPLASH_ACCESS_KEY` | Optional third image source |
 | `ALMANOOK_DEMO_USER_*` | Local single-user convenience. Do not enable on a public server. |
 | `ALMANOOK_SECURE_COOKIES` | `true` behind HTTPS |
