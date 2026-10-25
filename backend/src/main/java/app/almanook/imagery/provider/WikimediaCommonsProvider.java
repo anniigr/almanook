@@ -104,6 +104,7 @@ class WikimediaCommonsProvider implements ImageCandidateProvider {
                             .asString(""))
                     .text()
                     .strip();
+            artist = collapseRepeat(artist);
             String attribution =
                     (artist.isEmpty() ? "Wikimedia Commons" : artist) + " / " + license + ", via Wikimedia Commons";
             out.add(new CoverCandidate(
@@ -119,6 +120,14 @@ class WikimediaCommonsProvider implements ImageCandidateProvider {
             }
         }
         return out;
+    }
+
+    /** Commons often renders "Unknown author" twice (text + link title); keep one copy. */
+    static String collapseRepeat(String s) {
+        int half = s.length() / 2;
+        return s.length() % 2 == 0 && half > 0 && s.substring(0, half).equals(s.substring(half))
+                ? s.substring(0, half)
+                : s;
     }
 
     private static String truncate(String s, int max) {

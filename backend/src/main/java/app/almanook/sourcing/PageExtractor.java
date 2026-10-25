@@ -16,6 +16,7 @@ import java.util.regex.Pattern;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
+import org.jsoup.parser.Parser;
 import org.springframework.stereotype.Component;
 import tools.jackson.core.JacksonException;
 import tools.jackson.databind.JsonNode;
@@ -282,7 +283,8 @@ public class PageExtractor {
 
     private static java.util.Optional<String> meta(Document doc, String key) {
         Element e = doc.selectFirst("meta[property=" + key + "], meta[name=" + key + "]");
-        return java.util.Optional.ofNullable(e).map(el -> clean(el.attr("content")));
+        // Some sites double-encode entities in meta tags ("neon&amp;oacute;w"); decode once more.
+        return java.util.Optional.ofNullable(e).map(el -> clean(Parser.unescapeEntities(el.attr("content"), false)));
     }
 
     private static String absolutize(Document doc, String url) {

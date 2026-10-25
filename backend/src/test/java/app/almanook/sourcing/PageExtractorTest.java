@@ -59,6 +59,17 @@ class PageExtractorTest {
     }
 
     @Test
+    void doubleEncodedMetaEntitiesAreDecoded() {
+        FetchedResource r = new FetchedResource(
+                URI.create("https://neonmuzeum.org/"),
+                "text/html",
+                StandardCharsets.UTF_8,
+                "<html><head><meta property=\"og:title\" content=\"muzeum neon&amp;oacute;w\"></head></html>"
+                        .getBytes(StandardCharsets.UTF_8));
+        assertThat(extractor.extract(r).title()).isEqualTo("muzeum neonów");
+    }
+
+    @Test
     void pagesWithoutStructuredDataStillYieldTitle() {
         FetchedResource r = new FetchedResource(
                 URI.create("https://example.com/"),
