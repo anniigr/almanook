@@ -1,0 +1,67 @@
+spring:
+  application:
+    name: almanook
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/almanook}
+    username: ${SPRING_DATASOURCE_USERNAME:almanook}
+    password: ${SPRING_DATASOURCE_PASSWORD:almanook}
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        jdbc.time_zone: UTC
+        default_batch_fetch_size: 100
+  flyway:
+    enabled: true
+  servlet:
+    multipart:
+      max-file-size: 5MB
+      max-request-size: 6MB
+  threads:
+    virtual:
+      enabled: true
+  web:
+    # API messages (including Bean Validation) are English regardless of the host's locale
+    locale: en
+    locale-resolver: fixed
+
+server:
+  port: ${SERVER_PORT:8080}
+  error:
+    include-message: never
+    include-stacktrace: never
+  servlet:
+    session:
+      timeout: 14d
+      cookie:
+        http-only: true
+        same-site: lax
+        secure: ${ALMANOOK_SECURE_COOKIES:false}
+  forward-headers-strategy: framework
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      probes:
+        enabled: true
+  info:
+    build.enabled: true
+
+springdoc:
+  api-docs:
+    enabled: ${ALMANOOK_API_DOCS_ENABLED:true}
+  swagger-ui:
+    enabled: ${ALMANOOK_API_DOCS_ENABLED:true}
+
+almanook:
+  demo-user:
+    enabled: ${ALMANOOK_DEMO_USER_ENABLED:false}
+    email: ${ALMANOOK_DEMO_USER_EMAIL:demo@almanook.app}
+    password: ${ALMANOOK_DEMO_USER_PASSWORD:}
+    display-name: ${ALMANOOK_DEMO_USER_NAME:Demo}
