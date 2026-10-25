@@ -75,7 +75,7 @@ public class EnrichmentService {
                 covers.enabledProviders(),
                 ai.isAvailable()
                         ? "AI enrichment is available."
-                        : "AI enrichment is not configured (set ANTHROPIC_API_KEY). You can still create cards"
+                        : "AI enrichment is not configured (set GEMINI_API_KEY or ANTHROPIC_API_KEY). You can still create cards"
                                 + " manually, and importing a URL uses the page's own metadata.");
     }
 

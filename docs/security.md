@@ -51,18 +51,28 @@ in-process HTTP server.
 * The model gets a system prompt that defines the task. Retrieved page text is placed in a user
   message inside `<untrusted_page>` tags, with an explicit instruction that it is data and that any
   instructions inside it must be ignored.
-* The model's only tools are Anthropic's server-side `web_search` (research stage). The extraction
+* The model's only tools are the provider's server-side search: Anthropic's `web_search`, or Gemini's
+  `google_search` plus `url_context`, which Google runs on its own servers (research stage). The extraction
   stage has no tools at all. Even a successful injection can at most produce a wrong draft, and the
   user reviews every draft before saving.
 * Structured output is validated against the schema and then by Bean Validation. Dates, prices and
   addresses must name a source URL that was actually retrieved in this request (the fetched page or
   a web-search result URL); otherwise they are discarded and listed as unverified.
 
+### Gemini specifics
+
+* Interactions are sent with `store: false`, so Google does not keep them for later retrieval.
+* Google Search citations can be redirect links on `vertexaisearch.cloud.google.com`. The adapter
+  resolves them by reading the `Location` header of one request to that exact host. It never fetches
+  the target page, and links that do not resolve are dropped, so they cannot back a fact.
+* `url_context` results count as evidence only when their status reports success; pages that failed
+  to load or were flagged unsafe do not.
+
 ## Configuration secrets
 
 | Variable | Purpose |
 |---|---|
-| `ANTHROPIC_API_KEY` | Enables AI enrichment. If it is missing, the app runs with AI disabled. |
+| `ANTHROPIC_API_KEY` / `GEMINI_API_KEY` | Enables AI enrichment. If both are missing, the app runs with AI disabled. |
 | `UNSPLASH_ACCESS_KEY` | Optional third image source |
 | `POSTGRES_PASSWORD` / `SPRING_DATASOURCE_PASSWORD` | Database |
 | `ALMANOOK_DEMO_USER_PASSWORD` | Only used when the demo user is enabled (development) |

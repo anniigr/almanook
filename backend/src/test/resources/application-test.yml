@@ -1,4 +1,10 @@
 almanook:
+  ai:
+    # Never pick up a real key from the developer shell; tests that need AI point a provider at WireMock.
+    anthropic:
+      api-key: ""
+    gemini:
+      api-key: ""
   images:
     wikimedia:
       enabled: false

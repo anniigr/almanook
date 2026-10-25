@@ -61,7 +61,7 @@ export const aiOff: EnrichmentStatus = {
   provider: 'none',
   model: null,
   imageProviders: ['PAGE', 'WIKIMEDIA'],
-  message: 'AI enrichment is not configured (set ANTHROPIC_API_KEY).',
+  message: 'AI enrichment is not configured (set GEMINI_API_KEY or ANTHROPIC_API_KEY).',
 }
 
 export const aiOn: EnrichmentStatus = {

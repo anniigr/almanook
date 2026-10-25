@@ -10,7 +10,7 @@ run on every push.
 |---|---|---|---|
 | Backend unit | JUnit 5, AssertJ, Mockito | `ExpirationPolicy` (timezone and DST boundaries), URL canonicalisation, `UrlSafetyPolicy` (hostile inputs), `PageExtractor` (JSON-LD and Open Graph fixtures), `DraftAssembler` (user fields win, uncited facts dropped, permanent types never get an expiry), AI output parsing and validation, season filter semantics | `./mvnw test` |
 | Backend integration | Spring Boot Test, **Testcontainers PostgreSQL**, MockMvc | Flyway migrations and constraints, repository queries (search, season filter, pagination, sorting), REST API end to end with real security (CSRF, sessions, cross-user 404s), duplicate prevention, collection and discover state transitions, expired archive with a fixed `Clock` | `./mvnw verify` |
-| Provider contract | WireMock + the real Anthropic Java SDK pointed at WireMock | The adapter sends the expected request shape and parses research and extraction responses, and handles 4xx, 5xx, refusal and malformed JSON without fabricating a draft. The same approach covers the Wikimedia and Unsplash adapters. | `./mvnw verify` |
+| Provider contract | WireMock + the real Anthropic Java SDK pointed at WireMock; WireMock as the Gemini Interactions API | Each adapter sends the expected request shape and parses research and extraction responses, and handles 4xx, 5xx, refusal and malformed JSON without fabricating a draft. The same approach covers the Wikimedia and Unsplash adapters. | `./mvnw verify` |
 | SSRF | In-process HTTP server (`com.sun.net.httpserver`) | Redirect chains to private addresses, oversized bodies, slow responses and wrong content types. The test policy allows loopback only for that server and asserts that the production policy rejects it. | `./mvnw test` |
 | Architecture | Spring Modulith `ApplicationModules.verify()` | Module boundaries and the absence of cycles | `./mvnw test` |
 | Frontend unit and component | Vitest, Testing Library, MSW, jsdom | Navigation, season filter, search debounce, Add Card (generate, edit, save; manual creation; AI unavailable; AI error), Discover save and dismiss with undo, Expired restore, theme persistence and system preference, loading, empty and error states | `npm test` |
@@ -21,7 +21,7 @@ run on every push.
 * **Deterministic time.** Every expiry test injects a `Clock`. Expiry tests in the database use a
   fixed `today` and never the wall clock.
 * **No network in tests.** External HTTP goes to WireMock or an in-process server. The real
-  Anthropic API is never called in CI.
+  Anthropic and Gemini APIs are never called in CI.
 * **Real PostgreSQL.** Search uses `pg_trgm` and partial unique indexes, which H2 does not emulate
   correctly, so integration tests use Testcontainers (`postgres:17-alpine`).
 * **Tests are written alongside the feature** they cover, in the same commit.

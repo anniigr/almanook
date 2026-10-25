@@ -7,6 +7,9 @@ import app.almanook.enrichment.ResearchNotes;
 import app.almanook.enrichment.ResearchRequest;
 import app.almanook.enrichment.SourceRef;
 import app.almanook.enrichment.provider.AiProperties;
+import app.almanook.enrichment.provider.Prompts;
+import app.almanook.enrichment.provider.ProposalParser;
+import app.almanook.enrichment.provider.ProposalSchema;
 import com.anthropic.client.AnthropicClient;
 import com.anthropic.client.okhttp.AnthropicOkHttpClient;
 import com.anthropic.core.JsonValue;
@@ -26,18 +29,15 @@ import com.anthropic.models.messages.TextBlock;
 import com.anthropic.models.messages.UserLocation;
 import com.anthropic.models.messages.WebSearchResultBlock;
 import com.anthropic.models.messages.WebSearchTool20260209;
-import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Validator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import tools.jackson.core.JacksonException;
 import tools.jackson.databind.json.JsonMapper;
 
 /**
@@ -55,14 +55,12 @@ public class AnthropicResearchProvider implements AiResearchProvider {
 
     private final AiProperties.Anthropic properties;
     private final AnthropicClient client;
-    private final JsonMapper json;
-    private final Validator validator;
+    private final ProposalParser parser;
     private final Map<String, Object> schema = ProposalSchema.schema();
 
     public AnthropicResearchProvider(AiProperties.Anthropic properties, JsonMapper json, Validator validator) {
         this.properties = properties;
-        this.json = json;
-        this.validator = validator;
+        this.parser = new ProposalParser(json, validator);
         this.client = AnthropicOkHttpClient.builder()
                 .apiKey(properties.apiKey())
                 .baseUrl(properties.baseUrl())
@@ -154,21 +152,7 @@ public class AnthropicResearchProvider implements AiResearchProvider {
     }
 
     AiCardProposal parseProposal(String text) {
-        AiCardProposal proposal;
-        try {
-            proposal = json.readValue(text, AiCardProposal.class);
-        } catch (JacksonException e) {
-            log.warn("AI returned JSON that does not match the card schema: {}", e.getOriginalMessage());
-            throw new AiProviderException(
-                    "The AI returned data in an unexpected format. Try again or create the card manually.");
-        }
-        Set<ConstraintViolation<AiCardProposal>> violations =
-                proposal == null ? Set.of() : validator.validate(proposal);
-        if (proposal == null || !violations.isEmpty()) {
-            log.warn("AI proposal failed validation: {}", violations);
-            throw new AiProviderException("The AI returned an incomplete card. Try again or create the card manually.");
-        }
-        return proposal;
+        return parser.parse(text);
     }
 
     private MessageCreateParams.Builder base() {

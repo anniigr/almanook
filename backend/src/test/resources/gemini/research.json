@@ -1,0 +1,93 @@
+{
+  "id": "v1_research_1",
+  "object": "interaction",
+  "model": "gemini-3.8-flash",
+  "status": "completed",
+  "created": "2026-10-25T12:00:00Z",
+  "updated": "2026-10-25T12:00:05Z",
+  "steps": [
+    {
+      "type": "thought",
+      "summary": [
+        {
+          "type": "text",
+          "text": "Looking for the garden's ticket page."
+        }
+      ],
+      "signature": "sig"
+    },
+    {
+      "type": "google_search_call",
+      "id": "call_1",
+      "arguments": {
+        "queries": [
+          "Ogród Botaniczny Powsin bilety"
+        ]
+      }
+    },
+    {
+      "type": "google_search_result",
+      "call_id": "call_1",
+      "result": [
+        {
+          "search_suggestions": "<div>suggestions</div>"
+        }
+      ]
+    },
+    {
+      "type": "url_context_call",
+      "id": "call_2",
+      "arguments": {
+        "urls": [
+          "https://www.ogrod-powsin.pl/bilety/",
+          "https://www.ogrod-powsin.pl/godziny/"
+        ]
+      }
+    },
+    {
+      "type": "url_context_result",
+      "call_id": "call_2",
+      "result": [
+        {
+          "url": "https://www.ogrod-powsin.pl/bilety/",
+          "status": "success"
+        },
+        {
+          "url": "https://www.ogrod-powsin.pl/godziny/",
+          "status": "error"
+        }
+      ]
+    },
+    {
+      "type": "model_output",
+      "content": [
+        {
+          "type": "text",
+          "text": "price: 15 PLN normal ticket (source: https://www.ogrod-powsin.pl/bilety/)\nUnverified: winter opening hours\nOFFICIAL_URL: https://www.ogrod-powsin.pl/",
+          "annotations": [
+            {
+              "type": "url_citation",
+              "url": "REDIRECT_BASE/grounding-api-redirect/abc",
+              "title": "ogrod-powsin.pl",
+              "start_index": 0,
+              "end_index": 30
+            },
+            {
+              "type": "url_citation",
+              "url": "https://www.ogrod-powsin.pl/bilety/",
+              "title": "Bilety",
+              "start_index": 0,
+              "end_index": 30
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "usage": {
+    "total_input_tokens": 1200,
+    "total_output_tokens": 300,
+    "total_tokens": 1500,
+    "grounding_tool_count": 1
+  }
+}

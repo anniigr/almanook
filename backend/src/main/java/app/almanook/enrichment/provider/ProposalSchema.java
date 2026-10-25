@@ -1,4 +1,4 @@
-package app.almanook.enrichment.provider.anthropic;
+package app.almanook.enrichment.provider;
 
 import app.almanook.card.ItemType;
 import app.almanook.card.Season;
@@ -13,11 +13,11 @@ import java.util.Map;
  * within the structured-output subset (every property required, nullable via type unions, no numeric or
  * length constraints, additionalProperties false).
  */
-final class ProposalSchema {
+public final class ProposalSchema {
 
     private ProposalSchema() {}
 
-    static Map<String, Object> schema() {
+    public static Map<String, Object> schema() {
         Map<String, Object> props = new LinkedHashMap<>();
         props.put("identified", Map.of("type", "boolean"));
         props.put("title", str("Proper name of the place, event, film or experience"));

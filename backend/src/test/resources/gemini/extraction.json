@@ -1,0 +1,24 @@
+{
+  "id": "v1_extract_1",
+  "object": "interaction",
+  "model": "gemini-3.8-flash",
+  "status": "completed",
+  "created": "2026-10-25T12:00:06Z",
+  "updated": "2026-10-25T12:00:08Z",
+  "steps": [
+    {
+      "type": "model_output",
+      "content": [
+        {
+          "type": "text",
+          "text": "{\"identified\": true, \"title\": \"Ogród Botaniczny PAN w Powsinie\", \"shortDescription\": \"A 40-hectare botanical garden on Warsaw's southern edge. Magnolias in spring, colours in autumn.\", \"itemType\": \"PLACE\", \"venueName\": \"Ogród Botaniczny – CZRB PAN\", \"address\": \"ul. Prawdziwka 2\", \"addressSourceUrl\": \"https://www.ogrod-powsin.pl/\", \"city\": \"Warszawa\", \"country\": \"Poland\", \"latitude\": 52.1066, \"longitude\": 21.0947, \"creator\": null, \"releaseYear\": null, \"eventStartDate\": null, \"eventEndDate\": null, \"datesSourceUrl\": null, \"priceMin\": 15, \"priceMax\": null, \"currency\": \"PLN\", \"priceNote\": \"Reduced 10 PLN\", \"priceSourceUrl\": \"https://www.ogrod-powsin.pl/bilety/\", \"openingHoursNote\": \"Daily, hours vary by season\", \"openingHoursSourceUrl\": \"https://made-up.example/hours\", \"officialUrl\": \"https://www.ogrod-powsin.pl/\", \"seasons\": [\"SPRING\", \"SUMMER\", \"AUTUMN\"], \"imageSearchTerms\": \"Ogród Botaniczny Powsin\", \"confidence\": {\"identification\": \"HIGH\", \"dates\": \"LOW\", \"price\": \"HIGH\", \"location\": \"HIGH\"}, \"unverified\": [\"winter opening hours\"]}"
+        }
+      ]
+    }
+  ],
+  "usage": {
+    "total_input_tokens": 2000,
+    "total_output_tokens": 400,
+    "total_tokens": 2400
+  }
+}

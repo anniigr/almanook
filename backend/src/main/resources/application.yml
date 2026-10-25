@@ -72,6 +72,13 @@ almanook:
       access-key: ${UNSPLASH_ACCESS_KEY:}
       app-name: ${UNSPLASH_APP_NAME:almanook}
   ai:
+    # auto | anthropic | gemini | none; auto uses the first provider with an API key (Anthropic, then Gemini)
+    provider: ${ALMANOOK_AI_PROVIDER:auto}
+    gemini:
+      api-key: ${GEMINI_API_KEY:}
+      base-url: ${GEMINI_BASE_URL:https://generativelanguage.googleapis.com}
+      model: ${ALMANOOK_GEMINI_MODEL:gemini-3.8-flash}
+      thinking-level: ${ALMANOOK_GEMINI_THINKING_LEVEL:low}
     anthropic:
       api-key: ${ANTHROPIC_API_KEY:}
       base-url: ${ANTHROPIC_BASE_URL:https://api.anthropic.com}

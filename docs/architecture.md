@@ -11,13 +11,13 @@ rather than by convention.
 flowchart LR
     U[User's browser<br/>React SPA] -- "HTTPS, session cookie + CSRF header" --> B[Almanook backend<br/>Spring Boot 4.1 / Java 21]
     B -- JDBC --> DB[(PostgreSQL 17)]
-    B -- "Messages API (research + extraction)" --> AI[Anthropic Claude API]
+    B -- "research + extraction" --> AI[Anthropic Claude API<br/>or Google Gemini API]
     B -- "SSRF-guarded GET" --> W[Public web pages<br/>venue / organiser sites]
     B -- "REST, no key" --> WC[Wikimedia Commons API]
     B -. "REST, optional key" .-> UN[Unsplash API]
 ```
 
-The browser never talks to Claude, Wikimedia or Unsplash directly for data. External provider
+The browser never talks to the AI provider, Wikimedia or Unsplash directly for data. External provider
 credentials live only in the backend environment. Cover images selected from external providers are
 rendered by the browser from the provider's own URL (hotlinking is what Unsplash's API guidelines
 require and what Wikimedia permits), and user uploads are served by the backend.
@@ -65,7 +65,7 @@ flowchart TB
 | `discovery` | The Discover inbox of unsaved ideas: add, dismiss, restore, promote to collection without duplicating. | `DiscoveryEntry`, `DiscoveryService` |
 | `expiration` | Pure domain logic: "is this card expired today in this timezone?", default expiration for temporary item types, provenance precedence. No persistence. | `ExpirationPolicy`, `ExpirationSource` |
 | `sourcing` | Retrieves untrusted URLs safely (scheme/host/IP validation on every redirect hop, timeouts, size and content-type limits) and extracts structured facts: `<title>`, Open Graph, schema.org JSON-LD (`Event`, `Place`, `Museum`, `Offer`...), readable text. | `SafeHttpFetcher`, `UrlSafetyPolicy`, `PageExtractor`, `PageSnapshot` |
-| `enrichment` | Turns user input (name / URL / note) into a **draft** (never persisted by itself). Defines the `AiResearchProvider` port; the Anthropic adapter implements it. Validates the model's structured output, discards facts whose cited source was not actually retrieved, and never overwrites user-entered fields. | `EnrichmentService`, `AiResearchProvider`, `AnthropicResearchProvider`, `DraftAssembler`, `CardDraft` |
+| `enrichment` | Turns user input (name / URL / note) into a **draft** (never persisted by itself). Defines the `AiResearchProvider` port; the Anthropic and Gemini adapters implement it. Validates the model's structured output, discards facts whose cited source was not actually retrieved, and never overwrites user-entered fields. | `EnrichmentService`, `AiResearchProvider`, `AnthropicResearchProvider`, `GeminiResearchProvider`, `DraftAssembler`, `CardDraft` |
 | `imagery` | Cover candidates (official page image → Wikimedia Commons → Unsplash → none), attribution metadata, user uploads stored in PostgreSQL. | `CoverImageService`, `ImageCandidateProvider`, `UploadedImage` |
 | `search` | Read side for every listing (collection, Discover, Expired, all cards) and the Expired archive endpoint. One SQL statement filters, sorts and paginates; `CardService` hydrates the page. | `CardSearchService`, `SearchCriteria`, `ListingController` |
 | `shared` | RFC 9457 problem responses, `Clock` bean, pagination DTO. | `ApiExceptionHandler`, `PageResponse` |
@@ -98,7 +98,7 @@ sequenceDiagram
     participant API as EnrichmentController
     participant ES as EnrichmentService
     participant SF as SafeHttpFetcher
-    participant AI as AiResearchProvider (Claude)
+    participant AI as AiResearchProvider (Claude or Gemini)
     participant IMG as CoverImageService
     UI->>API: POST /api/v1/enrichment/drafts {input, url?, notes, seasons?, expiresOn?}
     API->>ES: generate(request, user)
@@ -149,7 +149,7 @@ reconcile. See [ADR-0004](adr/0004-query-time-expiration.md).
 | Framework | Spring Boot 4.1.2 (Spring Framework 7, Spring Security 7, Hibernate 7) | Current stable Boot line (4.2 is still RC as of 2026-10-25). |
 | Modularity | Spring Modulith 2.1 (verification only) | Fails the build when a module reaches into another module's internals. |
 | DB | PostgreSQL 17 + Flyway | `numeric` money, `pg_trgm` indexes for substring search, partial unique indexes for duplicate prevention. |
-| AI | Anthropic Claude via `com.anthropic:anthropic-java` 3.3 | Server-side web search for grounding + JSON-schema structured outputs. See [ADR-0003](adr/0003-ai-provider-claude.md). |
+| AI | Anthropic Claude via `com.anthropic:anthropic-java` 3.3, or Google Gemini via the Interactions REST API | Server-side web search for grounding + JSON-schema structured outputs. See [ADR-0003](adr/0003-ai-provider-claude.md) and [ADR-0006](adr/0006-gemini-provider.md). |
 | HTML parsing | jsoup 1.23 | Robust parser; JSON-LD parsed with Jackson. |
 | API docs | springdoc-openapi 3.2 | OpenAPI 3.1 at `/v3/api-docs`, Swagger UI at `/swagger-ui.html`. |
 | Frontend | React 19, TypeScript (strict), Vite, Tailwind CSS 4, TanStack Query 5, React Router 7, Radix UI primitives | Accessible primitives (dialog, dropdown menu, tooltip) without a heavy component kit. |

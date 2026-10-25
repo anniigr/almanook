@@ -75,7 +75,7 @@ visual grid with a structured, time-aware card. Naming and positioning:
 - **Add Card:** type a name, paste a URL, add a note, choose seasons or an expiry, then *Generate
   card*, or *Create manually*. Every draft is shown for review and editing before it is saved, and an
   edited value is saved as yours.
-- **AI enrichment (Claude), grounded and honest:** web research first, then schema-constrained
+- **AI enrichment (Claude or Gemini), grounded and honest:** web research first, then schema-constrained
   extraction. Dates, prices, addresses and opening hours are kept only if they cite a page that was
   actually retrieved; otherwise they are left empty and listed as *unverified*. Your input is never
   overwritten: a better official name is offered as a suggestion.
@@ -108,7 +108,7 @@ flowchart LR
     end
     A -- JDBC / Flyway --> P[(PostgreSQL 17)]
     M3 -- "SSRF-guarded GET" --> Web[Venue & organiser pages]
-    M3 -- "Messages API: web search + JSON schema" --> C[Anthropic Claude]
+    M3 -- "web search + JSON schema" --> C[Claude or Gemini]
     M3 -- REST --> WC[Wikimedia Commons]
     M3 -. optional .-> U[Unsplash]
 ```
@@ -118,11 +118,11 @@ sequenceDiagram
     participant UI as Add Card dialog
     participant EN as Enrichment
     participant SF as Safe fetcher
-    participant AI as Claude
+    participant AI as Claude / Gemini
     UI->>EN: POST /enrichment/drafts {query, url?, notes, seasons?}
     EN->>SF: fetch URL (scheme/IP/redirect/size checks)
     SF-->>EN: JSON-LD, Open Graph, page text
-    EN->>AI: 1) research with web_search
+    EN->>AI: 1) research with web search
     AI-->>EN: notes + URLs actually retrieved
     EN->>AI: 2) structured extraction (JSON schema, no tools)
     AI-->>EN: card proposal with a source URL per fact
@@ -171,7 +171,7 @@ keep provenance and status timestamps consistent. Full rationale: [docs/data-mod
 | Layer | Stack |
 |---|---|
 | Backend | Java 21, Spring Boot 4.1.2 (Web MVC, Security 7, Data JPA / Hibernate 7, Validation, Actuator), Spring Modulith 2.1, Flyway, springdoc-openapi 3.2 |
-| AI and images | `com.anthropic:anthropic-java` 3.3 (Claude, web search tool, structured outputs), Wikimedia Commons API, Unsplash API (optional) |
+| AI and images | `com.anthropic:anthropic-java` 3.3 (Claude, web search tool, structured outputs) or the Gemini Interactions API over the JDK HTTP client (Google Search and URL context grounding, JSON schema output), Wikimedia Commons API, Unsplash API (optional) |
 | Fetching | Apache HttpClient 5 with a validating DNS resolver, jsoup |
 | Database | PostgreSQL 17 (`pg_trgm` search indexes) |
 | Frontend | React 19, TypeScript (strict), Vite 8, Tailwind CSS 4, TanStack Query 5, React Router 8, Radix UI, lucide icons |
@@ -237,9 +237,11 @@ Everything is configured through environment variables, documented in
 | Variable | Purpose |
 |---|---|
 | `POSTGRES_*`, `SPRING_DATASOURCE_*` | Database |
-| `ANTHROPIC_API_KEY` | Enables AI enrichment. If empty, AI is off and the UI explains why. |
-| `ALMANOOK_AI_MODEL` / `ALMANOOK_AI_EFFORT` | Default `claude-opus-5-5` at `low` effort. Can be switched to, for example, `claude-sonnet-5-5` or `claude-haiku-5-5` to reduce cost. |
+| `ANTHROPIC_API_KEY` or `GEMINI_API_KEY` | Enables AI enrichment with Claude or Gemini. If both are empty, AI is off and the UI explains why. |
+| `ALMANOOK_AI_PROVIDER` | `auto` (default: Anthropic if its key is set, otherwise Gemini), `anthropic`, `gemini` or `none` |
+| `ALMANOOK_AI_MODEL` / `ALMANOOK_AI_EFFORT` | Claude: default `claude-opus-5-5` at `low` effort. Can be switched to, for example, `claude-sonnet-5-5` or `claude-haiku-5-5` to reduce cost. |
 | `ALMANOOK_AI_REFUSAL_FALLBACK` | Sends Claude's server-side refusal fallback (beta). Set `false` if your account or gateway rejects it. |
+| `ALMANOOK_GEMINI_MODEL` / `ALMANOOK_GEMINI_THINKING_LEVEL` | Gemini: default `gemini-3.8-flash` at thinking level `low`. A key is free to create at [Google AI Studio](https://aistudio.google.com/apikey). |
 | `UNSPLASH_ACCESS_KEY` | Optional third image source |
 | `ALMANOOK_DEMO_USER_*` | Local single-user convenience. Do not enable on a public server. |
 | `ALMANOOK_SECURE_COOKIES` | `true` behind HTTPS |
@@ -249,8 +251,8 @@ Everything is configured through environment variables, documented in
 
 | Suite | Tool | Count | Command |
 |---|---|---|---|
-| Backend unit, architecture and contract | JUnit 5, AssertJ, Spring Modulith, WireMock with the real Anthropic SDK, in-process HTTP server for SSRF | 114 | `cd backend && ./mvnw test` |
-| Backend integration | Spring Boot, Testcontainers PostgreSQL 17, real HTTP client with cookie jar and CSRF | 40 | `cd backend && ./mvnw verify` |
+| Backend unit, architecture and contract | JUnit 5, AssertJ, Spring Modulith, WireMock with the real Anthropic SDK and a WireMock Gemini Interactions API, in-process HTTP server for SSRF | 126 | `cd backend && ./mvnw test` |
+| Backend integration | Spring Boot, Testcontainers PostgreSQL 17, real HTTP client with cookie jar and CSRF | 42 | `cd backend && ./mvnw verify` |
 | Frontend components | Vitest, Testing Library, MSW | 26 | `cd frontend && npm test` |
 | End to end | Playwright against the Docker Compose stack | 3 journeys | `make e2e` |
 
@@ -282,10 +284,13 @@ Threat model and details: [docs/security.md](docs/security.md).
 
 ## Known limitations
 
-- **The live Claude integration has not been exercised against the real API in this repository.**
-  No API key was available while building it. The adapter is tested through the official SDK against
-  recorded-shape responses (WireMock), and the rest of the app was verified end to end without a key.
-  Setting `ANTHROPIC_API_KEY` is the remaining step to verify enrichment live.
+- **Neither AI integration has been exercised against the real API in this repository.** No API key
+  was available while building them. The Claude adapter is tested through the official SDK against
+  recorded-shape responses (WireMock); the Gemini adapter is tested against WireMock responses
+  shaped after Google's Interactions API documentation, which does not publish every field of the
+  tool-result steps, so the parser reads them defensively. The rest of the app was verified end to
+  end without a key. Setting `GEMINI_API_KEY` or `ANTHROPIC_API_KEY` is the remaining step to verify
+  enrichment live.
 - Automatic Wikimedia covers come from a keyword search. They are correctly licensed and attributed
   but can be only loosely related (for example, a building photo for an exhibition). The cover picker
   lets you choose another.
