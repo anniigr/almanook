@@ -1,0 +1,11 @@
+{"batchcomplete":true,"query":{"pages":[
+ {"pageid":2,"ns":6,"title":"File:Logo.png","index":2,"imageinfo":[{"width":1200,"height":800,"mime":"image/png",
+   "thumburl":"https://upload.wikimedia.org/thumb/logo.png","url":"https://upload.wikimedia.org/logo.png",
+   "descriptionurl":"https://commons.wikimedia.org/wiki/File:Logo.png",
+   "extmetadata":{"LicenseShortName":{"value":"Fair use"},"Artist":{"value":"Someone"}}}]},
+ {"pageid":1,"ns":6,"title":"File:Powsin - Ogród Botaniczny (1).JPG","index":1,"imageinfo":[{"width":2816,"height":2112,"mime":"image/jpeg",
+   "thumburl":"https://upload.wikimedia.org/wikipedia/commons/thumb/9/96/Powsin.JPG/1280px-Powsin.JPG",
+   "url":"https://upload.wikimedia.org/wikipedia/commons/9/96/Powsin.JPG",
+   "descriptionurl":"https://commons.wikimedia.org/wiki/File:Powsin_-_Ogr%C3%B3d_Botaniczny_(1).JPG",
+   "extmetadata":{"LicenseShortName":{"value":"CC BY 3.0"},"Artist":{"value":"Aneta Leszkiewicz <a href=\"//commons.wikimedia.org/wiki/User:Inetta\">Inetta</a>"}}}]}
+]}}

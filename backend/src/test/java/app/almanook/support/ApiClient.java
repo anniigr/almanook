@@ -73,6 +73,32 @@ public class ApiClient {
         return send(HttpRequest.newBuilder(uri(path)).DELETE(), true);
     }
 
+    public Response upload(String path, String filename, String contentType, byte[] data) {
+        String boundary = "----almanook" + System.nanoTime();
+        java.io.ByteArrayOutputStream body = new java.io.ByteArrayOutputStream();
+        String head = "--" + boundary + "\r\nContent-Disposition: form-data; name=\"file\"; filename=\"" + filename
+                + "\"\r\nContent-Type: " + contentType + "\r\n\r\n";
+        body.writeBytes(head.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+        body.writeBytes(data);
+        body.writeBytes(("\r\n--" + boundary + "--\r\n").getBytes(java.nio.charset.StandardCharsets.UTF_8));
+        return send(
+                HttpRequest.newBuilder(uri(path))
+                        .header("Content-Type", "multipart/form-data; boundary=" + boundary)
+                        .POST(HttpRequest.BodyPublishers.ofByteArray(body.toByteArray())),
+                true);
+    }
+
+    public HttpResponse<byte[]> getBytes(String path) {
+        try {
+            return http.send(HttpRequest.newBuilder(uri(path)).GET().build(), HttpResponse.BodyHandlers.ofByteArray());
+        } catch (IOException e) {
+            throw new IllegalStateException(e);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new IllegalStateException(e);
+        }
+    }
+
     /** Sends without the CSRF header, to prove protection is active. */
     public Response postWithoutCsrf(String path, String body) {
         return send(withBody(path, "POST", body), false);

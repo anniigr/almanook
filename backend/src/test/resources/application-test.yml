@@ -1,0 +1,7 @@
+almanook:
+  images:
+    wikimedia:
+      enabled: false
+logging:
+  level:
+    app.almanook: INFO

@@ -65,3 +65,17 @@ almanook:
     email: ${ALMANOOK_DEMO_USER_EMAIL:demo@almanook.app}
     password: ${ALMANOOK_DEMO_USER_PASSWORD:}
     display-name: ${ALMANOOK_DEMO_USER_NAME:Demo}
+  images:
+    wikimedia:
+      enabled: ${ALMANOOK_WIKIMEDIA_ENABLED:true}
+    unsplash:
+      access-key: ${UNSPLASH_ACCESS_KEY:}
+      app-name: ${UNSPLASH_APP_NAME:almanook}
+  ai:
+    anthropic:
+      api-key: ${ANTHROPIC_API_KEY:}
+      base-url: ${ANTHROPIC_BASE_URL:https://api.anthropic.com}
+      model: ${ALMANOOK_AI_MODEL:claude-opus-5-5}
+      effort: ${ALMANOOK_AI_EFFORT:low}
+      max-searches: ${ALMANOOK_AI_MAX_SEARCHES:4}
+      refusal-fallback: ${ALMANOOK_AI_REFUSAL_FALLBACK:true}

@@ -9,6 +9,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 import org.springframework.context.annotation.Primary;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.test.context.ActiveProfiles;
 import org.testcontainers.postgresql.PostgreSQLContainer;
 
 /**
@@ -17,6 +18,7 @@ import org.testcontainers.postgresql.PostgreSQLContainer;
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @Import(AbstractIntegrationTest.TestTimeConfig.class)
+@ActiveProfiles("test")
 public abstract class AbstractIntegrationTest {
 
     public static final Instant DEFAULT_NOW = Instant.parse("2026-10-25T10:00:00Z");
