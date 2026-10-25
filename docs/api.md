@@ -82,8 +82,8 @@ Internal exception messages are never returned.
 
 | Method | Path | Description |
 |---|---|---|
-| POST | `/cards` | Creates a card. Request: `CardInput` plus `destination: COLLECTION\|DISCOVER\|NONE` (default `COLLECTION`), and optional `enrichment` metadata and `originalInput` taken from a draft. Returns 201 `Card`, or 409 `duplicate_card`. |
-| GET | `/cards` | Lists or searches all of the user's cards (`q`, `season`, `sort`, `page`, `size`). |
+| POST | `/cards` | Creates a card. Request: `{ "card": CardInput, "destination": "COLLECTION"\|"DISCOVER"\|"NONE" (default COLLECTION), "originalInput"?: string, "enrichment"?: object }`. `originalInput` and `enrichment` come from a draft. Returns 201 `Card`, or 409 `duplicate_card` (with `existingCardId`). |
+| GET | `/cards` | Lists or searches all of the user's cards, whatever their status (`q`, `season`, `sort`, `page`, `size`). |
 | GET | `/cards/{id}` | Returns the card with the user's collection and discovery status. |
 | PUT | `/cards/{id}` | Full update of the metadata. `CardInput` must include `version`; a stale version returns 409 `stale_version`. Fields the user changes get `*Source = USER`. |
 | PATCH | `/cards/{id}/expiration` | `{expiresOn: "2026-12-24" \| null}`. Sets or clears the expiry (source `USER`). Clearing it, or moving it into the future, takes the card out of the archive. |
@@ -129,7 +129,6 @@ New inbox items are created with `POST /cards` and `destination: DISCOVER`.
 |---|---|---|
 | GET | `/enrichment/status` | `{aiAvailable, provider, model, imageProviders: ["PAGE","WIKIMEDIA","UNSPLASH"], message}` |
 | POST | `/enrichment/drafts` | Generates a **draft** (nothing is saved). Request: `{query?, url?, notes?, seasons?, expiresOn?}`; at least one of `query` or `url` is required. Returns `CardDraft`. |
-| POST | `/enrichment/cover-candidates` | `{title, city?, sourceUrl?}` returns up to 8 `CoverCandidate`s for the "Choose another cover" picker. |
 
 `CardDraft`:
 
@@ -159,6 +158,9 @@ returned in its place.
 |---|---|---|
 | POST | `/images` | `multipart/form-data` upload, `file` field, JPEG, PNG or WebP up to 5 MiB. The format is checked by magic bytes. Returns 201 `{id, url}`. |
 | GET | `/images/{id}` | Returns the image bytes. Only the owner can access it. Served with `Cache-Control: private, max-age=86400`. |
+| POST | `/images/candidates` | `{query}` returns up to 8 `CoverCandidate`s (Wikimedia Commons, plus Unsplash if configured) for the cover picker. |
+| POST | `/images/check-url` | `{url}` returns `{usable}`: whether a pasted https image URL is reachable and safe (same SSRF rules as page fetches). |
+| POST | `/images/unsplash-selection` | `{downloadLocation}` reports that an Unsplash photo was selected, as the Unsplash API guidelines require. |
 
 ## Operations
 

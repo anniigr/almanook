@@ -28,30 +28,33 @@ require and what Wikimedia permits), and user uploads are served by the backend.
 flowchart TB
     subgraph web[HTTP layer]
       direction LR
-      C1[identity.web] --- C2[card.web] --- C3[collection.web] --- C4[discovery.web] --- C5[enrichment.web] --- C6[imagery.web]
+      C1[identity.web] --- C2[card.web] --- C3[collection.web] --- C4[discovery.web] --- C5[enrichment.web] --- C6[imagery.web] --- C7[search.web]
     end
     identity[identity<br/>users, preferences, auth]
-    card[card<br/>card metadata, seasons, dates, search]
+    card[card<br/>card metadata, seasons, dates, provenance]
     collection[collection<br/>saved entries, visited]
     discovery[discovery<br/>inbox entries, dismiss/restore]
     expiration[expiration<br/>timezone-aware expiry rules]
     enrichment[enrichment<br/>AI provider port + draft assembly]
     sourcing[sourcing<br/>safe URL fetch, page extraction]
     imagery[imagery<br/>cover candidates, uploads]
-    shared[shared<br/>errors, clock, security helpers]
+    shared[shared<br/>errors, pagination, clock]
 
+    search[search<br/>listings, archive query]
     collection --> card
     discovery --> card
-    collection --> expiration
-    discovery --> expiration
+    discovery --> collection
     card --> expiration
+    card --> identity
+    search --> card
+    search --> identity
     enrichment --> sourcing
     enrichment --> imagery
-    imagery --> sourcing
-    collection --> identity
-    discovery --> identity
-    card --> identity
     enrichment --> card
+    imagery --> sourcing
+    imagery --> card
+    collection -. "implements CardMembershipPort" .-> card
+    discovery -. "implements CardMembershipPort" .-> card
 ```
 
 | Module | Responsibility | Key types |
@@ -64,6 +67,7 @@ flowchart TB
 | `sourcing` | Retrieves untrusted URLs safely (scheme/host/IP validation on every redirect hop, timeouts, size and content-type limits) and extracts structured facts: `<title>`, Open Graph, schema.org JSON-LD (`Event`, `Place`, `Museum`, `Offer`...), readable text. | `SafeHttpFetcher`, `UrlSafetyPolicy`, `PageExtractor`, `PageSnapshot` |
 | `enrichment` | Turns user input (name / URL / note) into a **draft** (never persisted by itself). Defines the `AiResearchProvider` port; the Anthropic adapter implements it. Validates the model's structured output, discards facts whose cited source was not actually retrieved, and never overwrites user-entered fields. | `EnrichmentService`, `AiResearchProvider`, `AnthropicResearchProvider`, `DraftAssembler`, `CardDraft` |
 | `imagery` | Cover candidates (official page image → Wikimedia Commons → Unsplash → none), attribution metadata, user uploads stored in PostgreSQL. | `CoverImageService`, `ImageCandidateProvider`, `UploadedImage` |
+| `search` | Read side for every listing (collection, Discover, Expired, all cards) and the Expired archive endpoint. One SQL statement filters, sorts and paginates; `CardService` hydrates the page. | `CardSearchService`, `SearchCriteria`, `ListingController` |
 | `shared` | RFC 9457 problem responses, `Clock` bean, pagination DTO. | `ApiExceptionHandler`, `PageResponse` |
 
 Each module keeps the same internal layering:
@@ -78,6 +82,11 @@ Each module keeps the same internal layering:
 
 Controllers never touch repositories; provider adapters never touch the domain model directly — they
 return provider-neutral value objects that the application service validates.
+
+The `card` module needs to place a new card into the collection or the inbox and to show a card's
+personal status, but `collection` and `discovery` depend on `card`. Instead of a cycle, `card` defines
+a small `CardMembershipPort` interface that both modules implement (dependency inversion), and saving
+from the collection notifies `discovery` through an in-transaction `CardSavedToCollection` event.
 
 ## Key flows
 

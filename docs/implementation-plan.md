@@ -1,7 +1,7 @@
 # Implementation plan
 
 Work is delivered in vertical stages. Each stage ends with green tests and at least one commit.
-Status is updated as work lands. Git history is the authoritative record.
+All twelve stages were completed on 2026-10-25; Git history is the authoritative record of the order.
 
 | # | Stage | Scope | Done when |
 |---|---|---|---|

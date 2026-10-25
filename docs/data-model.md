@@ -38,7 +38,7 @@ erDiagram
         numeric latitude
         numeric longitude
         varchar creator "director, artist, performer"
-        smallint release_year
+        integer release_year
         varchar source_url
         varchar canonical_url "normalised, for duplicate detection"
         numeric price_min
