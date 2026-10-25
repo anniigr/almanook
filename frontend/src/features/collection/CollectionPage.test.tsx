@@ -33,7 +33,7 @@ describe('My Collection', () => {
     renderApp('/collection')
     const exhibition = await screen.findByRole('article', { name: 'Tamara Łempicka' })
     expect(within(exhibition).getByText(/Muzeum Narodowe · 3 Oct 2026 – 17 Jan 2027/)).toBeInTheDocument()
-    expect(within(exhibition).getByText(/PLN\s?25–PLN\s?35|PLN 25–PLN 35/)).toBeInTheDocument()
+    expect(within(exhibition).getByText(/PLN\s?25–35/)).toBeInTheDocument()
     expect(within(exhibition).getByText('Autumn')).toBeInTheDocument()
     expect(within(exhibition).getByText('Until 17 Jan 2027')).toBeInTheDocument()
     const film = screen.getByRole('article', { name: 'Perfect Days' })

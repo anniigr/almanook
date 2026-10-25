@@ -29,8 +29,11 @@ describe('format', () => {
     expect(formatPrice({ min: 15, max: null, currency: 'PLN', note: null, source: 'USER' })).toMatch(
       /PLN\s?15/,
     )
-    expect(formatPrice({ min: 25, max: 35.5, currency: 'EUR', note: null, source: 'USER' })).toBe(
-      '€25–€35.50',
+    expect(formatPrice({ min: 25, max: 35.5, currency: 'EUR', note: null, source: 'USER' })).toMatch(
+      /^€25\.00\s?–\s?€?35\.50$/,
+    )
+    expect(formatPrice({ min: 20, max: 25, currency: 'PLN', note: null, source: 'USER' })).toMatch(
+      /^PLN\s?20\s?–\s?25$/,
     )
     expect(formatPrice(null)).toBe('')
   })

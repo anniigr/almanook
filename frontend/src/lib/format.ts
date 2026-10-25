@@ -27,17 +27,17 @@ export function formatDateRange(start: string | null, end: string | null): strin
 
 export function formatPrice(price: Card['price']): string {
   if (!price) return ''
-  const fmt = (v: number) =>
-    new Intl.NumberFormat('en-GB', {
-      style: 'currency',
-      currency: price.currency,
-      minimumFractionDigits: Number.isInteger(v) ? 0 : 2,
-      maximumFractionDigits: 2,
-    }).format(v)
   if (price.min === 0 && (price.max === null || price.max === 0)) return 'Free'
+  const whole = Number.isInteger(price.min) && (price.max === null || Number.isInteger(price.max))
+  const nf = new Intl.NumberFormat('en-GB', {
+    style: 'currency',
+    currency: price.currency,
+    minimumFractionDigits: whole ? 0 : 2,
+    maximumFractionDigits: 2,
+  })
   return price.max !== null && price.max !== price.min
-    ? `${fmt(price.min)}–${fmt(price.max)}`
-    : fmt(price.min)
+    ? nf.formatRange(price.min, price.max)
+    : nf.format(price.min)
 }
 
 /** Whole days from `today` (local) to the ISO date; negative when in the past. */
